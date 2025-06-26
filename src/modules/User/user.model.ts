@@ -40,24 +40,19 @@ const userSchema = new Schema<IUser, UserModel>(
   }
 );
 
-
-// use hook to hash password before saving user
-userSchema.pre('save', async function (next) {
-  // eslint-disable-next-line @typescript-eslint/no-this-alias
-  const user = this;
-  // hashing password before saving
-  user.password = await bcrypt.hash(
-    user.password,
-    Number(config.bcrypt_salt_rounds),
-  );
-  next();
-});
-
 // use hook to empty password before sending response
-userSchema.post('save', function (doc, next) {
-  doc.password = '';
+userSchema.pre('save', async function (next) {
+  const user = this;
+
+  // Only hash password if it's modified and defined
+  if (user.isModified('password') && user.password) {
+    const saltRounds = Number(config.bcrypt_salt_rounds || 10);
+    user.password = await bcrypt.hash(user.password, saltRounds);
+  }
+
   next();
 });
+
 
 // find user by using email
 userSchema.statics.isUserExistByEmail = async function (email: string) {

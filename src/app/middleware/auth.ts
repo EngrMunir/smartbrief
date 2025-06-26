@@ -14,6 +14,7 @@ import { catchAsync } from "../utils/catchAsync";
 
 const auth = (...requiredRoles:TUserRole[])=>{
     return catchAsync( async (req:Request, res:Response, next:NextFunction)=>{
+     
         const token = req.headers.authorization?.split(' ')[1];
 
         if(!token){
@@ -39,13 +40,20 @@ const auth = (...requiredRoles:TUserRole[])=>{
             throw new AppError(status.NOT_FOUND,'This user is not exist');
         }
 
-        if(requiredRoles && !requiredRoles.includes(role)){
-            throw new AppError(
-                status.UNAUTHORIZED,
-                'Your are not authorized!!'
-            );
-        }
-        req.user = user;
+       if (requiredRoles.length > 0 && !requiredRoles.includes(role)) {
+  throw new AppError(
+    status.UNAUTHORIZED,
+    'You are not authorized!!'
+  );
+}
+
+        req.user = {
+             _id: user._id?.toString(),
+             role: user.role,
+             email: user.email,
+             credits: user.credits,
+};
+
             next();
 
     })

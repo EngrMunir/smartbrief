@@ -18,7 +18,19 @@ const getAllUsersFromDB = async () => {
 };
 
 
+const rechargeCredits = async (userId: string, amount: number) => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(status.NOT_FOUND, 'User not found');
+
+  user.credits += amount;
+  await user.save();
+
+  return { userId: user._id, newCredits: user.credits };
+};
+
+
 export const UserServices = {
   getSingleUserFromDB,
-  getAllUsersFromDB
+  getAllUsersFromDB,
+  rechargeCredits
 };

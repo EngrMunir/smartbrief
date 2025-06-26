@@ -7,7 +7,9 @@ import { Summary } from './summary.model';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(config.gemini_api_key);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+// const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-flash' });
+
 
 const generateSummary = async (
   userId: string,
@@ -21,7 +23,6 @@ const generateSummary = async (
   const fullPrompt = prompt || 'Summarize this content in 3-5 lines:';
   const inputText = `${fullPrompt}\n\n${originalText}`;
 
-  // 👇 This part MUST be correct
   const result = await model.generateContent([inputText]);
   const response = await result.response;
   const summaryText = response.text() || 'Summary not available.';
@@ -73,11 +74,53 @@ const deleteSummary = async (
   const summary = await Summary.findById(summaryId);
   if (!summary) throw new AppError(status.NOT_FOUND, 'Summary not found');
 
-  if (userRole !== 'editor' && summary.user.toString() !== userId) {
-    throw new AppError(status.FORBIDDEN, 'You are not allowed to delete this summary');
-  }
+  if (!['admin', 'editor'].includes(userRole) && summary.user.toString() !== userId) {
+  throw new AppError(status.FORBIDDEN, 'You are not allowed to delete this summary');
+}
 
   await Summary.findByIdAndDelete(summaryId);
+};
+
+const repromptSummary = async (
+  userId: string,
+  summaryId: string,
+  newPrompt?: string
+): Promise<ISummary> => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(status.NOT_FOUND, 'User not found');
+  if (user.credits <= 0) throw new AppError(status.BAD_REQUEST, 'Insufficient credits');
+
+  const oldSummary = await Summary.findById(summaryId);
+  if (!oldSummary) throw new AppError(status.NOT_FOUND, 'Original summary not found');
+
+  if (oldSummary.user.toString() !== userId) {
+    throw new AppError(status.FORBIDDEN, 'You are not allowed to reprompt this summary');
+  }
+
+  const prompt = newPrompt?.trim() || 'Summarize this content in 3-5 lines:';
+  const inputText = `${prompt}\n\n${oldSummary.originalText}`;
+
+  const result = await model.generateContent([inputText]);
+  const response = result.response;
+  const summaryText = response.text() || 'Summary not available.';
+  const wordCount = summaryText.split(' ').length;
+
+  const newSummary = await Summary.create({
+    user: user._id,
+    originalText: oldSummary.originalText,
+    summary: summaryText,
+    prompt,
+    wordCount,
+  });
+
+  user.credits -= 1;
+  await user.save();
+
+  return newSummary;
+};
+
+const getAllSummaries = async (): Promise<ISummary[]> => {
+  return Summary.find().populate('user', 'name email role').sort({ createdAt: -1 });
 };
 
 export const SummaryServices = {
@@ -85,4 +128,6 @@ export const SummaryServices = {
   getUserSummaries,
   updateSummary,
   deleteSummary,
+  repromptSummary,
+  getAllSummaries
 };

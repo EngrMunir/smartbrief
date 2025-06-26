@@ -4,18 +4,18 @@ import { UserServices } from './user.service';
 import { catchAsync } from '../../app/utils/catchAsync';
 import sendResponse from '../../app/utils/sendResponse';
 
-const getSingleUser = catchAsync(async (req: Request, res: Response) => {
-  const { userEmail } = req.params;
+// const getSingleUser = catchAsync(async (req: Request, res: Response) => {
+//   const { userEmail } = req.params;
 
-  const result = await UserServices.getSingleUserFromDB(userEmail);
+//   const result = await UserServices.getSingleUserFromDB(userEmail);
 
-  sendResponse(res, {
-    statusCode: status.OK,
-    success: true,
-    message: 'User retrieved successfully',
-    data: result,
-  });
-});
+//   sendResponse(res, {
+//     statusCode: status.OK,
+//     success: true,
+//     message: 'User retrieved successfully',
+//     data: result,
+//   });
+// });
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserServices.getAllUsersFromDB();
@@ -29,7 +29,43 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const rechargeCredits = catchAsync(async (req: Request, res: Response) => {
+  const adminId = req.user?._id;
+  const userRole = req.user?.role;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Only admin can recharge credits' });
+  }
+
+  const { userId, amount } = req.body;
+  const result = await UserServices.rechargeCredits(userId, amount);
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    success: true,
+    message: 'Credits recharged successfully',
+    data: result,
+  });
+});
+
+const getMyProfile = async (req: Request, res: Response) => {
+  const email = req.user?.email;
+  console.log('email',email)
+  const result = await UserServices.getSingleUserFromDB(email);
+  console.log('result',result);
+  sendResponse(res, {
+    statusCode: status.OK,
+    success: true,
+    message: 'User profile fetched successfully',
+    data: result,
+  });
+};
+
+
+
+
 export const UserController = {
-  getSingleUser,
   getAllUsers,
+  rechargeCredits,
+  getMyProfile
 };
