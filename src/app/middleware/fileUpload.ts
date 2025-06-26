@@ -14,7 +14,8 @@ export const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     if (ext !== '.txt' && ext !== '.docx') {
-      return cb(new Error('Only .txt and .docx files are allowed'), false);
+      return cb(new Error('Only .txt and .docx files are allowed') as unknown as null, false);
+
     }
     cb(null, true);
   },

@@ -50,7 +50,7 @@ const rechargeCredits = catchAsync(async (req: Request, res: Response) => {
 
 const getMyProfile = async (req: Request, res: Response) => {
   const email = req.user?.email;
-  console.log('email',email)
+  if (!email) throw new Error("User ID is required");
   const result = await UserServices.getSingleUserFromDB(email);
   console.log('result',result);
   sendResponse(res, {

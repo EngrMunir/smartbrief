@@ -3,13 +3,17 @@ import { catchAsync } from '../../app/utils/catchAsync';
 import sendResponse from '../../app/utils/sendResponse';
 import status from 'http-status';
 import { SummaryServices } from './summary.service';
-import fs from 'fs/promises';
+import fs from 'fs';
 import { readTxtOrDocx } from '../../app/utils/readTxtOrDocx';
+import path from "path";
+import mammoth from 'mammoth';
+import { unlink } from 'fs/promises';
+
 
 const generateSummary = catchAsync(async (req: Request, res: Response) => {
   const { originalText, prompt } = req.body;
   const userId = req.user?._id;
-
+if (!userId) throw new Error("User ID is required");
   const result = await SummaryServices.generateSummary(userId, originalText, prompt);
 
   sendResponse(res, {
@@ -22,6 +26,7 @@ const generateSummary = catchAsync(async (req: Request, res: Response) => {
 
 const getUserSummaries = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?._id;
+  if (!userId) throw new Error("User ID is required");
   const result = await SummaryServices.getUserSummaries(userId);
 
   sendResponse(res, {
@@ -49,7 +54,8 @@ export const updateSummary = catchAsync(async (req: Request, res: Response) => {
   const { summary: updatedText } = req.body;
   const userId = req.user?._id;
   const userRole = req.user?.role;
-
+if (!userId) throw new Error("User ID is required");
+if (!userRole) throw new Error("User Role is required");
   const result = await SummaryServices.updateSummary(userId, id, updatedText, userRole);
 
   sendResponse(res, {
@@ -64,7 +70,8 @@ export const deleteSummary = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user?._id;
   const userRole = req.user?.role;
-
+  if (!userId) throw new Error("User ID is required");
+  if (!userRole) throw new Error("User Role is required");
   await SummaryServices.deleteSummary(userId, id, userRole);
 
   sendResponse(res, {
@@ -85,9 +92,10 @@ const generateSummaryFromFile = catchAsync(async (req: Request, res: Response) =
   }
 
   const originalText = await readTxtOrDocx(filePath);
+  if (!userId) throw new Error("User ID is required");
   const result = await SummaryServices.generateSummary(userId, originalText, prompt);
 
-  await fs.unlink(filePath); // delete file after processing
+  await unlink(filePath); // delete file after processing
 
   sendResponse(res, {
     statusCode: status.OK,
@@ -115,7 +123,7 @@ const uploadAndGenerateSummary = catchAsync(async (req: Request, res: Response) 
   } else {
     throw new Error('Unsupported file type');
   }
-
+if (!userId) throw new Error("User ID is required");
   const summary = await SummaryServices.generateSummary(userId, originalText, prompt);
 
   sendResponse(res, {
@@ -130,7 +138,7 @@ export const repromptSummary = catchAsync(async (req: Request, res: Response) =>
   const { id } = req.params;
   const { prompt } = req.body;
   const userId = req.user?._id;
-
+if (!userId) throw new Error("User ID is required");
   const result = await SummaryServices.repromptSummary(userId, id, prompt);
 
   sendResponse(res, {

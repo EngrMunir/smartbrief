@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SummaryRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../app/middleware/auth"));
+const summary_controller_1 = require("./summary.controller");
+const user_constant_1 = require("../User/user.constant");
+const fileUpload_1 = require("../../app/middleware/fileUpload");
+const router = express_1.default.Router();
+router.post('/generate', (0, auth_1.default)(user_constant_1.USER_ROLE.admin, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.reviewer, user_constant_1.USER_ROLE.user), summary_controller_1.SummaryController.generateSummary);
+router.post('/upload', (0, auth_1.default)(user_constant_1.USER_ROLE.admin, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.user, user_constant_1.USER_ROLE.reviewer), fileUpload_1.upload.single('file'), summary_controller_1.SummaryController.generateSummaryFromFile);
+router.post('/reprompt/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.user, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.admin), summary_controller_1.SummaryController.repromptSummary);
+router.get('/history', (0, auth_1.default)(user_constant_1.USER_ROLE.user, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.reviewer), summary_controller_1.SummaryController.getUserSummaries);
+router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.admin, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.reviewer), summary_controller_1.SummaryController.getAllSummaries);
+router.patch('/:id', (0, auth_1.default)(), summary_controller_1.SummaryController.updateSummary);
+router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.admin, user_constant_1.USER_ROLE.editor, user_constant_1.USER_ROLE.user), summary_controller_1.SummaryController.deleteSummary);
+exports.SummaryRoutes = router;
